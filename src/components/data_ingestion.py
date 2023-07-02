@@ -4,17 +4,24 @@ import pandas as pd
 import numpy as np 
 from pymongo import MongoClient
 from zipfile import Path
-from upload_data import uri
+
 
 from src.exceptions import CustomException
 from src.logger import logging
+from sklearn.model_selection import train_test_split
+from src.components.data_transformation import DataTransformation
 
+URL = 'mongodb+srv://raorudhra16:3011@credit.u3fbkp8.mongodb.net/?retryWrites=true&w=majority'
 DATABASE_NAME = 'Creditcardfault'
 COLLECTION_NAME = 'CreditData'
 
 class DataIngestionConfig():
-    def __init__(self,artifact_folder:str = os.path.join('artifacts')):
+    def __init__(self,artifact_folder:str = os.path.join('artifacts'),
+                train_data_path:str = os.path.join('artifacts','train.csv'),
+                test_data_path:str = os.path.join('artifacts','test.csv')):
         self.artifact_folder = artifact_folder
+        self.train_data_path = train_data_path
+        self.test_data_path = test_data_path
 
 
 class DataIngestion():
@@ -28,7 +35,7 @@ class DataIngestion():
         '''
         try:
             logging.info('Data ingestion started')
-            client = MongoClient(uri)
+            client = MongoClient(URL)
             logging.info('Connecting with mongo db atlas')
             collection = client[database_name][collection_name]
             df = pd.DataFrame(list(collection.find()))
@@ -65,12 +72,24 @@ class DataIngestion():
         try:
             store_file_path = self.export_data_into_file_path()
             logging.info('Got the data from db and saved under artifact folder')
-            return store_file_path 
+            data = pd.read_csv(store_file_path)
+            logging.info('Data read as data frame after saved successfully')
+            logging.info('Data splitting started "Train Test Split"')
+            train_set, test_set = train_test_split(data,test_size=0.2,random_state=42)
+            train_set.to_csv(self.data_ingestion_config.train_data_path,index=False,header=True)
+            test_set.to_csv(self.data_ingestion_config.test_data_path,index=False,header=True)
+            logging.info('Data splitted successfully')
+            return (
+                self.data_ingestion_config.train_data_path,
+                self.data_ingestion_config.test_data_path,
+                store_file_path
+            )
         except Exception as e:
             raise CustomException(e,sys)
         
 
-
 if __name__ == "__main__":
     obj = DataIngestion()
-    obj.initiate_data_ingestion()
+    train_data,test_data,store_file_path = obj.initiate_data_ingestion()
+    dt = DataTransformation(store_file_path=store_file_path)
+    dt.initiate_data_transformation(train_path=train_data,test_path=test_data)
