@@ -4,16 +4,15 @@ import pandas as pd
 import numpy as np 
 from pymongo import MongoClient
 from zipfile import Path
-
+from constant import *
 
 from src.exceptions import CustomException
 from src.logger import logging
 from sklearn.model_selection import train_test_split
 from src.components.data_transformation import DataTransformation
+from src.components.model_trainer import ModelTrainer
 
-URL = 'mongodb+srv://raorudhra16:3011@credit.u3fbkp8.mongodb.net/?retryWrites=true&w=majority'
-DATABASE_NAME = 'Creditcardfault'
-COLLECTION_NAME = 'CreditData'
+
 
 class DataIngestionConfig():
     def __init__(self,artifact_folder:str = os.path.join('artifacts'),
@@ -92,4 +91,6 @@ if __name__ == "__main__":
     obj = DataIngestion()
     train_data,test_data,store_file_path = obj.initiate_data_ingestion()
     dt = DataTransformation(store_file_path=store_file_path)
-    dt.initiate_data_transformation(train_path=train_data,test_path=test_data)
+    train_arr,test_arr,_ = dt.initiate_data_transformation(train_path=train_data,test_path=test_data)
+    model_trainer_obj = ModelTrainer()
+    model_trainer_obj.initiate_model_trainer(train_arr=train_arr,test_arr=test_arr)
