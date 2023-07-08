@@ -4,6 +4,7 @@ import pickle
 from src.exceptions import CustomException
 from src.logger import logging
 from sklearn.metrics import accuracy_score
+import yaml
 
 def save_object(file_path,obj):
     '''
@@ -36,5 +37,16 @@ def evaluate_model(X_train,y_train,X_test,y_test,models:dict):
             test_model_score = accuracy_score(y_test,y_test_pred)
             report[list(models.keys())[i]] = test_model_score
         return report
+    except Exception as e:
+        raise CustomException(e,sys)
+    
+
+def read_yaml(file_path:str)->dict:
+    '''
+        Desc: This function responsible for reading params from yaml file
+    '''
+    try:
+        with open(file_path,'rb') as yaml_obj:
+            return yaml.safe_load(yaml_obj)
     except Exception as e:
         raise CustomException(e,sys)
